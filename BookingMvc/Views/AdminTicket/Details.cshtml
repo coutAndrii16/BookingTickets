@@ -1,0 +1,27 @@
+@model BookingData.Models.Ticket
+@{
+    ViewData["Title"] = "Деталі квитка";
+}
+
+<div class="card shadow-sm border-0" style="max-width:600px">
+    <div class="card-header bg-dark text-white"><h5 class="mb-0">📋 Деталі квитка #@Model.TicketId</h5></div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-5">Ім'я покупця</dt><dd class="col-sm-7">@Model.BuyerName</dd>
+            <dt class="col-sm-5">Email</dt><dd class="col-sm-7">@Model.BuyerEmail</dd>
+            <dt class="col-sm-5">Місць</dt><dd class="col-sm-7">@Model.SeatCount</dd>
+            <dt class="col-sm-5">Дата замовлення</dt><dd class="col-sm-7">@Model.OrderDate.ToString("dd.MM.yyyy HH:mm")</dd>
+            <dt class="col-sm-5">Подія</dt><dd class="col-sm-7">@(Model.Event?.Title ?? "—")</dd>
+            <dt class="col-sm-5">Місце події</dt><dd class="col-sm-7">@(Model.Event?.Location ?? "—")</dd>
+            <dt class="col-sm-5">Ціна за місце</dt><dd class="col-sm-7 text-success fw-bold">@(Model.Event?.Price.ToString("c") ?? "—")</dd>
+            <dt class="col-sm-5">Загальна вартість</dt>
+            <dd class="col-sm-7 text-success fw-bold">
+                @((Model.Event != null ? Model.Event.Price * Model.SeatCount : 0).ToString("c"))
+            </dd>
+        </dl>
+    </div>
+    <div class="card-footer d-flex gap-2">
+        <a asp-action="Edit" asp-route-id="@Model.TicketId" class="btn btn-primary btn-sm">✏ Редагувати</a>
+        <a asp-action="Index" class="btn btn-secondary btn-sm">← Назад</a>
+    </div>
+</div>

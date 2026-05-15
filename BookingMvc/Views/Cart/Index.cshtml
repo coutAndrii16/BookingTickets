@@ -1,0 +1,45 @@
+@model IQueryable<BookingData.Models.Event>
+@{
+    ViewData["Title"] = "Кошик";
+}
+
+<h4 class="mb-3">🛒 Ваш кошик</h4>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Кошик порожній. <a asp-controller="Home" asp-action="Index">Перейти до подій</a>
+    </div>
+}
+else
+{
+    <table class="table table-bordered table-hover bg-white shadow-sm">
+        <thead class="table-dark">
+        <tr>
+            <th>Назва</th><th>Дата</th><th>Місце</th><th>Ціна</th><th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var e in Model)
+        {
+            <tr>
+                <td>@e.Title</td>
+                <td>@e.Date.ToString("dd.MM.yyyy")</td>
+                <td>@e.Location</td>
+                <td class="text-success fw-bold">@e.Price.ToString("c")</td>
+                <td>
+                    <a class="btn btn-sm btn-outline-danger"
+                       href="/Cart/Remove?eventId=@e.EventId">✕ Видалити</a>
+                </td>
+            </tr>
+        }
+        </tbody>
+        <tfoot>
+        <tr class="table-light">
+            <td colspan="3" class="text-end fw-bold">Разом:</td>
+            <td class="text-success fw-bold">@Model.Sum(e => e.Price).ToString("c")</td>
+            <td></td>
+        </tr>
+        </tfoot>
+    </table>
+}

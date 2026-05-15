@@ -1,0 +1,32 @@
+@model BookingMvc.Models.ViewModels.EventListViewModel
+@{
+    ViewData["Title"] = "Головна";
+}
+
+<h4 class="mb-3">
+    @(Model.CurrentCategory != null ? $"📍 {Model.CurrentCategory}" : "🗓 Усі події")
+</h4>
+
+@if (!Model.Events.Any())
+{
+    <div class="alert alert-info">Подій не знайдено.</div>
+}
+
+@foreach (var e in Model.Events)
+{
+    <partial name="EventSummary" model="e" />
+}
+
+@if (Model.PagingInfo.TotalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination">
+            @for (int i = 1; i <= Model.PagingInfo.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.PagingInfo.CurrentPage ? "active" : "")">
+                    <a class="page-link" href="/Home/Index?page=@i&category=@Model.CurrentCategory">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

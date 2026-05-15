@@ -1,0 +1,42 @@
+@model IOrderedQueryable<BookingData.Models.Ticket>
+@{
+    ViewData["Title"] = "Управління квитками";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>🎫 Управління квитками</h4>
+    <a asp-action="Create" class="btn btn-success">+ Новий квиток</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Квитків поки немає.</div>
+}
+else
+{
+    <table class="table table-hover bg-white shadow-sm">
+        <thead class="table-dark">
+        <tr>
+            <th>#</th><th>Покупець</th><th>Email</th><th>Подія</th><th>Місць</th><th>Дата</th><th>Дії</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var t in Model)
+        {
+            <tr>
+                <td>@t.TicketId</td>
+                <td>@t.BuyerName</td>
+                <td>@t.BuyerEmail</td>
+                <td>@(t.Event?.Title ?? "—")</td>
+                <td>@t.SeatCount</td>
+                <td>@t.OrderDate.ToString("dd.MM.yyyy")</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@t.TicketId" class="btn btn-sm btn-outline-info">👁</a>
+                    <a asp-action="Edit" asp-route-id="@t.TicketId" class="btn btn-sm btn-outline-primary">✏</a>
+                    <a asp-action="Delete" asp-route-id="@t.TicketId" class="btn btn-sm btn-outline-danger">🗑</a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}

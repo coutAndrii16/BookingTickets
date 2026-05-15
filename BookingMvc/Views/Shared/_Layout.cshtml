@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Booking Tickets</title>
+    <link href="/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="/css/site.css" rel="stylesheet" />
+</head>
+<body>
+
+<nav class="navbar navbar-expand-md navbar-dark bg-dark px-3">
+    <a class="navbar-brand fw-bold" href="/">🎟 Booking Tickets</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Home" asp-action="Index">🏠 Головна</a>
+            </li>
+            @if (User.IsInRole("Admin"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Admin" asp-action="Index">⚙ Адмін: події</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="AdminTicket" asp-action="Index">🎫 Адмін: квитки</a>
+                </li>
+            }
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Cart" asp-action="Index">🛒 Кошик</a>
+                </li>
+            }
+        </ul>
+        <ul class="navbar-nav">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Account" asp-action="Profile">
+                        👤 @User.Identity.Name
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <span class="badge bg-warning text-dark ms-1">Admin</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-info text-dark ms-1">User</span>
+                        }
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Account" asp-action="Logout">🚪 Вийти</a>
+                </li>
+            }
+            else
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Account" asp-action="Login">🔑 Увійти</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Account" asp-action="Register">📝 Реєстрація</a>
+                </li>
+            }
+        </ul>
+    </div>
+</nav>
+
+<div class="container-fluid mt-3 px-4">
+    <div class="row">
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <div class="col-md-2">
+                @await Component.InvokeAsync("NavigationMenu")
+            </div>
+            <div class="col-md-10">
+                @if (TempData["message"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        @TempData["message"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+                @RenderBody()
+            </div>
+        }
+        else
+        {
+            <div class="col-12">
+                @RenderBody()
+            </div>
+        }
+    </div>
+</div>
+
+<footer class="bg-light text-center mt-5 p-3 border-top text-muted">
+    © 2026 Booking Tickets
+</footer>
+
+<script src="/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

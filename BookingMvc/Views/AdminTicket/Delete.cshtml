@@ -1,0 +1,25 @@
+@model BookingData.Models.Ticket
+@{
+    ViewData["Title"] = "Видалення квитка";
+}
+
+<div class="card shadow-sm border-danger border" style="max-width:500px">
+    <div class="card-header bg-danger text-white"><h5 class="mb-0">🗑 Підтвердження видалення квитка</h5></div>
+    <div class="card-body">
+        <p>Ви справді хочете видалити цей квиток?</p>
+        <dl class="row">
+            <dt class="col-sm-5">Покупець</dt><dd class="col-sm-7">@Model.BuyerName</dd>
+            <dt class="col-sm-5">Email</dt><dd class="col-sm-7">@Model.BuyerEmail</dd>
+            <dt class="col-sm-5">Місць</dt><dd class="col-sm-7">@Model.SeatCount</dd>
+            <dt class="col-sm-5">Подія</dt><dd class="col-sm-7">@(Model.Event?.Title ?? "—")</dd>
+        </dl>
+    </div>
+    <div class="card-footer d-flex gap-2">
+        <form asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="TicketId" />
+            <button type="submit" class="btn btn-danger">✔ Так, видалити</button>
+        </form>
+        <a asp-action="Index" class="btn btn-secondary">← Скасувати</a>
+    </div>
+</div>

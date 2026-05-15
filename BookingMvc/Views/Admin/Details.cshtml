@@ -1,0 +1,23 @@
+@model BookingData.Models.Event
+@{
+    ViewData["Title"] = "Деталі події";
+}
+
+<div class="card shadow-sm border-0 mb-4" style="max-width:600px">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">📋 Деталі події #@Model.EventId</h5>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-4">Назва</dt><dd class="col-sm-8">@Model.Title</dd>
+            <dt class="col-sm-4">Опис</dt><dd class="col-sm-8">@Model.Description</dd>
+            <dt class="col-sm-4">Дата</dt><dd class="col-sm-8">@Model.Date.ToString("dd.MM.yyyy HH:mm")</dd>
+            <dt class="col-sm-4">Місце</dt><dd class="col-sm-8">@Model.Location</dd>
+            <dt class="col-sm-4">Ціна</dt><dd class="col-sm-8 text-success fw-bold">@Model.Price.ToString("c")</dd>
+        </dl>
+    </div>
+    <div class="card-footer d-flex gap-2">
+        <a asp-action="Edit" asp-route-id="@Model.EventId" class="btn btn-primary btn-sm">✏ Редагувати</a>
+        <a asp-action="Index" class="btn btn-secondary btn-sm">← Назад</a>
+    </div>
+</div>

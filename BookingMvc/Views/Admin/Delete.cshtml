@@ -1,0 +1,28 @@
+@model BookingData.Models.Event
+@{
+    ViewData["Title"] = "Видалення події";
+}
+
+<div class="card shadow-sm border-danger border" style="max-width:500px">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0">🗑 Підтвердження видалення</h5>
+    </div>
+    <div class="card-body">
+        <p>Ви справді хочете видалити цю подію?</p>
+        <dl class="row">
+            <dt class="col-sm-4">Назва</dt><dd class="col-sm-8">@Model.Title</dd>
+            <dt class="col-sm-4">Дата</dt><dd class="col-sm-8">@Model.Date.ToString("dd.MM.yyyy")</dd>
+            <dt class="col-sm-4">Місце</dt><dd class="col-sm-8">@Model.Location</dd>
+            <dt class="col-sm-4">Ціна</dt><dd class="col-sm-8">@Model.Price.ToString("c")</dd>
+        </dl>
+        <div class="alert alert-warning small mb-0">⚠ Разом з подією будуть видалені всі пов'язані квитки!</div>
+    </div>
+    <div class="card-footer d-flex gap-2">
+        <form asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="EventId" />
+            <button type="submit" class="btn btn-danger">✔ Так, видалити</button>
+        </form>
+        <a asp-action="Index" class="btn btn-secondary">← Скасувати</a>
+    </div>
+</div>

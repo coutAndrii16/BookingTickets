@@ -1,0 +1,18 @@
+@model IEnumerable<string>
+@{
+    string? currentCategory = Context.Request.Query["category"];
+}
+
+<div class="list-group mb-3">
+    <a class="list-group-item list-group-item-action @(currentCategory == null ? "active" : "")"
+       href="/Home/Index">
+        🌐 Усі міста
+    </a>
+    @foreach (var cat in Model)
+    {
+        <a class="list-group-item list-group-item-action @(cat == currentCategory ? "active" : "")"
+           href="/Home/Index?category=@cat">
+            📍 @cat
+        </a>
+    }
+</div>
