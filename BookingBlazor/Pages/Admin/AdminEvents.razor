@@ -1,0 +1,212 @@
+﻿@page "/admin/events"
+@attribute [Authorize(Roles = "Admin")]
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<PageTitle>Управління подіями</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>⚙ Управління подіями</h4>
+    <button class="btn btn-success" @onclick="ShowCreateForm">+ Нова подія</button>
+</div>
+
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="alert alert-success alert-dismissible">
+        @successMessage
+        <button class="btn-close" @onclick="() => successMessage = string.Empty"></button>
+    </div>
+}
+
+@if (showForm)
+{
+    <div class="card shadow-sm border-0 mb-4" style="max-width:600px">
+        <div class="card-header @(editId.HasValue ? "bg-primary" : "bg-success") text-white">
+            <h5 class="mb-0">@(editId.HasValue ? "✏ Редагування події" : "+ Нова подія")</h5>
+        </div>
+        <div class="card-body">
+            @if (!string.IsNullOrEmpty(formError))
+            {
+                <div class="alert alert-danger py-2">@formError</div>
+            }
+            <EditForm Model="@formModel" OnValidSubmit="HandleSubmit">
+                <DataAnnotationsValidator />
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Назва</label>
+                    <InputText @bind-Value="formModel.Title" class="form-control" />
+                    <ValidationMessage For="@(() => formModel.Title)" class="text-danger small" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Опис</label>
+                    <InputTextArea @bind-Value="formModel.Description" class="form-control" rows="3" />
+                    <ValidationMessage For="@(() => formModel.Description)" class="text-danger small" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Дата</label>
+                    <InputDate @bind-Value="formModel.Date" class="form-control" />
+                    <ValidationMessage For="@(() => formModel.Date)" class="text-danger small" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Місце</label>
+                    <InputText @bind-Value="formModel.Location" class="form-control" />
+                    <ValidationMessage For="@(() => formModel.Location)" class="text-danger small" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Ціна (₴)</label>
+                    <InputNumber @bind-Value="formModel.Price" class="form-control" />
+                    <ValidationMessage For="@(() => formModel.Price)" class="text-danger small" />
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn @(editId.HasValue ? "btn-primary" : "btn-success")" disabled="@isLoading">
+                        @(isLoading ? "Збереження..." : "💾 Зберегти")
+                    </button>
+                    <button type="button" class="btn btn-secondary" @onclick="CancelForm">← Скасувати</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (events == null)
+{
+    <div class="d-flex justify-content-center my-5">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else if (!events.Any())
+{
+    <div class="alert alert-info">Подій поки немає.</div>
+}
+else
+{
+    <table class="table table-hover bg-white shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th><th>Назва</th><th>Дата</th><th>Місце</th><th>Ціна</th><th>Дії</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var ev in events)
+            {
+                <tr>
+                    <td>@ev.EventId</td>
+                    <td>@ev.Title</td>
+                    <td>@ev.Date.ToString("dd.MM.yyyy")</td>
+                    <td>@ev.Location</td>
+                    <td class="text-success">@ev.Price.ToString("C")</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => StartEdit(ev)">✏</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(ev)">🗑</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (deleteTarget != null)
+{
+    <div class="modal d-block" style="background:rgba(0,0,0,0.5)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">🗑 Підтвердження видалення</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Ви справді хочете видалити подію <strong>«@deleteTarget.Title»</strong>?</p>
+                    <div class="alert alert-warning small">⚠ Разом з подією будуть видалені всі пов'язані квитки!</div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-danger" @onclick="DeleteConfirmed">✔ Так, видалити</button>
+                    <button class="btn btn-secondary" @onclick="() => deleteTarget = null">← Скасувати</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<EventDto>? events;
+    private CreateEventDto formModel = new();
+    private bool showForm = false;
+    private long? editId;
+    private string formError = string.Empty;
+    private string successMessage = string.Empty;
+    private bool isLoading = false;
+    private EventDto? deleteTarget;
+
+    protected override async Task OnInitializedAsync() => await LoadEvents();
+
+    private async Task LoadEvents()
+    {
+        events = await Http.GetFromJsonAsync<List<EventDto>>("api/events");
+    }
+
+    private void ShowCreateForm()
+    {
+        formModel = new CreateEventDto();
+        editId = null;
+        formError = string.Empty;
+        showForm = true;
+    }
+
+    private void StartEdit(EventDto ev)
+    {
+        formModel = new CreateEventDto
+        {
+            Title = ev.Title, Description = ev.Description,
+            Date = ev.Date, Location = ev.Location, Price = ev.Price
+        };
+        editId = ev.EventId;
+        formError = string.Empty;
+        showForm = true;
+    }
+
+    private void CancelForm()
+    {
+        showForm = false;
+        editId = null;
+    }
+
+    private async Task HandleSubmit()
+    {
+        isLoading = true;
+        formError = string.Empty;
+
+        HttpResponseMessage response;
+        if (editId.HasValue)
+            response = await Http.PutAsJsonAsync($"api/events/{editId}", formModel);
+        else
+            response = await Http.PostAsJsonAsync("api/events", formModel);
+
+        isLoading = false;
+
+        if (response.IsSuccessStatusCode)
+        {
+            successMessage = editId.HasValue
+                ? $"Подію «{formModel.Title}» успішно оновлено."
+                : $"Подію «{formModel.Title}» успішно створено.";
+            showForm = false;
+            await LoadEvents();
+        }
+        else
+        {
+            formError = $"Помилка: {response.StatusCode}";
+        }
+    }
+
+    private void ConfirmDelete(EventDto ev) => deleteTarget = ev;
+
+    private async Task DeleteConfirmed()
+    {
+        if (deleteTarget == null) return;
+        var response = await Http.DeleteAsync($"api/events/{deleteTarget.EventId}");
+        if (response.IsSuccessStatusCode)
+        {
+            successMessage = $"Подію «{deleteTarget.Title}» видалено.";
+            deleteTarget = null;
+            await LoadEvents();
+        }
+    }
+}

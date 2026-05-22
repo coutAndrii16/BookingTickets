@@ -1,0 +1,64 @@
+﻿@page "/login"
+@inject AuthService AuthSvc
+@inject NavigationManager Nav
+@layout BookingBlazor.Shared.MainLayout
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow border-0">
+            <div class="card-header bg-dark text-white text-center py-3">
+                <h4 class="mb-0">🔑 Вхід до системи</h4>
+            </div>
+            <div class="card-body p-4">
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger py-2">@errorMessage</div>
+                }
+                <EditForm Model="@model" OnValidSubmit="HandleLogin">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email</label>
+                        <InputText @bind-Value="model.Email" class="form-control" placeholder="email@example.com" />
+                        <ValidationMessage For="@(() => model.Email)" class="text-danger small" />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Пароль</label>
+                        <InputText @bind-Value="model.Password" type="password" class="form-control" placeholder="Пароль" />
+                        <ValidationMessage For="@(() => model.Password)" class="text-danger small" />
+                    </div>
+
+                    <button type="submit" class="btn btn-dark w-100 py-2" disabled="@isLoading">
+                        @(isLoading ? "Завантаження..." : "Увійти")
+                    </button>
+                </EditForm>
+            </div>
+            <div class="card-footer text-center text-muted py-3">
+                Немає акаунту?
+                <a href="/register" class="text-decoration-none fw-semibold">Зареєструватись</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginDto model = new();
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
+
+    [Parameter][SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+        var (success, message) = await AuthSvc.LoginAsync(model);
+        isLoading = false;
+
+        if (success)
+            Nav.NavigateTo(ReturnUrl ?? "/", forceLoad: true);
+        else
+            errorMessage = message;
+    }
+}

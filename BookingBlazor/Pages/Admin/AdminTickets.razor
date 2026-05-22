@@ -1,0 +1,220 @@
+﻿@page "/admin/tickets"
+@attribute [Authorize(Roles = "Admin")]
+@inject HttpClient Http
+
+<PageTitle>Управління квитками</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>🎫 Управління квитками</h4>
+    <button class="btn btn-success" @onclick="ShowCreateForm">+ Новий квиток</button>
+</div>
+
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="alert alert-success alert-dismissible">
+        @successMessage
+        <button class="btn-close" @onclick="() => successMessage = string.Empty"></button>
+    </div>
+}
+
+@if (showForm)
+{
+    <div class="card shadow-sm border-0 mb-4" style="max-width:600px">
+        <div class="card-header @(editId.HasValue ? "bg-primary" : "bg-success") text-white">
+            <h5 class="mb-0">@(editId.HasValue ? "✏ Редагування квитка" : "+ Новий квиток")</h5>
+        </div>
+        <div class="card-body">
+            @if (!string.IsNullOrEmpty(formError))
+            {
+                <div class="alert alert-danger py-2">@formError</div>
+            }
+            <EditForm Model="@formModel" OnValidSubmit="HandleSubmit">
+                <DataAnnotationsValidator />
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Ім'я покупця</label>
+                    <InputText @bind-Value="formModel.BuyerName" class="form-control" />
+                    <ValidationMessage For="@(() => formModel.BuyerName)" class="text-danger small" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Email покупця</label>
+                    <InputText @bind-Value="formModel.BuyerEmail" class="form-control" />
+                    <ValidationMessage For="@(() => formModel.BuyerEmail)" class="text-danger small" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Кількість місць</label>
+                    <InputNumber @bind-Value="formModel.SeatCount" class="form-control" min="1" max="20" />
+                    <ValidationMessage For="@(() => formModel.SeatCount)" class="text-danger small" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Подія</label>
+                    <InputSelect @bind-Value="formModel.EventId" class="form-select">
+                        <option value="0">— Оберіть подію —</option>
+                        @if (events != null)
+                        {
+                            @foreach (var ev in events)
+                            {
+                                <option value="@ev.EventId">@ev.Title (@ev.Date.ToString("dd.MM.yyyy")) — @ev.Location</option>
+                            }
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => formModel.EventId)" class="text-danger small" />
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn @(editId.HasValue ? "btn-primary" : "btn-success")" disabled="@isLoading">
+                        @(isLoading ? "Збереження..." : "💾 Зберегти")
+                    </button>
+                    <button type="button" class="btn btn-secondary" @onclick="CancelForm">← Скасувати</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (tickets == null)
+{
+    <div class="d-flex justify-content-center my-5">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else if (!tickets.Any())
+{
+    <div class="alert alert-info">Квитків поки немає.</div>
+}
+else
+{
+    <table class="table table-hover bg-white shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th><th>Покупець</th><th>Email</th><th>Подія</th><th>Місць</th><th>Дата</th><th>Дії</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var t in tickets)
+            {
+                <tr>
+                    <td>@t.TicketId</td>
+                    <td>@t.BuyerName</td>
+                    <td>@t.BuyerEmail</td>
+                    <td>@(t.EventTitle ?? "—")</td>
+                    <td>@t.SeatCount</td>
+                    <td>@t.OrderDate.ToString("dd.MM.yyyy")</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => StartEdit(t)">✏</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(t)">🗑</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (deleteTarget != null)
+{
+    <div class="modal d-block" style="background:rgba(0,0,0,0.5)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">🗑 Підтвердження видалення</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Видалити квиток для <strong>@deleteTarget.BuyerName</strong>?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-danger" @onclick="DeleteConfirmed">✔ Так, видалити</button>
+                    <button class="btn btn-secondary" @onclick="() => deleteTarget = null">← Скасувати</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<TicketDto>? tickets;
+    private List<EventDto>? events;
+    private CreateTicketDto formModel = new();
+    private bool showForm = false;
+    private long? editId;
+    private string formError = string.Empty;
+    private string successMessage = string.Empty;
+    private bool isLoading = false;
+    private TicketDto? deleteTarget;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(LoadTickets(), LoadEvents());
+    }
+
+    private async Task LoadTickets()
+    {
+        tickets = await Http.GetFromJsonAsync<List<TicketDto>>("api/tickets");
+    }
+
+    private async Task LoadEvents()
+    {
+        events = await Http.GetFromJsonAsync<List<EventDto>>("api/events");
+    }
+
+    private void ShowCreateForm()
+    {
+        formModel = new CreateTicketDto();
+        editId = null;
+        formError = string.Empty;
+        showForm = true;
+    }
+
+    private void StartEdit(TicketDto t)
+    {
+        formModel = new CreateTicketDto
+        {
+            BuyerName = t.BuyerName, BuyerEmail = t.BuyerEmail,
+            SeatCount = t.SeatCount, EventId = t.EventId
+        };
+        editId = t.TicketId;
+        formError = string.Empty;
+        showForm = true;
+    }
+
+    private void CancelForm() { showForm = false; editId = null; }
+
+    private async Task HandleSubmit()
+    {
+        isLoading = true;
+        formError = string.Empty;
+
+        HttpResponseMessage response;
+        if (editId.HasValue)
+            response = await Http.PutAsJsonAsync($"api/tickets/{editId}", formModel);
+        else
+            response = await Http.PostAsJsonAsync("api/tickets", formModel);
+
+        isLoading = false;
+
+        if (response.IsSuccessStatusCode)
+        {
+            successMessage = editId.HasValue
+                ? $"Квиток для «{formModel.BuyerName}» оновлено."
+                : $"Квиток для «{formModel.BuyerName}» створено.";
+            showForm = false;
+            await LoadTickets();
+        }
+        else
+        {
+            formError = $"Помилка: {response.StatusCode}";
+        }
+    }
+
+    private void ConfirmDelete(TicketDto t) => deleteTarget = t;
+
+    private async Task DeleteConfirmed()
+    {
+        if (deleteTarget == null) return;
+        var response = await Http.DeleteAsync($"api/tickets/{deleteTarget.TicketId}");
+        if (response.IsSuccessStatusCode)
+        {
+            successMessage = $"Квиток для «{deleteTarget.BuyerName}» видалено.";
+            deleteTarget = null;
+            await LoadTickets();
+        }
+    }
+}

@@ -1,0 +1,59 @@
+﻿@page "/"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<PageTitle>Головна — Booking Tickets</PageTitle>
+
+<div class="row mb-4">
+    <div class="col">
+        <h4>🗓 Найближчі події</h4>
+    </div>
+</div>
+
+@if (events == null)
+{
+    <div class="d-flex justify-content-center my-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Завантаження...</span>
+        </div>
+    </div>
+}
+else if (!events.Any())
+{
+    <div class="alert alert-info">Подій не знайдено.</div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        @foreach (var ev in events)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title">@ev.Title</h5>
+                        <p class="text-muted small mb-1">
+                            📍 @ev.Location &nbsp;|&nbsp; 📅 @ev.Date.ToString("dd.MM.yyyy HH:mm")
+                        </p>
+                        <p class="card-text text-secondary mt-2">@ev.Description</p>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between align-items-center bg-transparent border-0">
+                        <span class="fs-5 fw-bold text-success">@ev.Price.ToString("C")</span>
+                        <a href="/events/@ev.EventId/buy" class="btn btn-sm btn-primary">
+                            🎫 Придбати квиток
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<EventDto>? events;
+
+    protected override async Task OnInitializedAsync()
+    {
+        events = await Http.GetFromJsonAsync<List<EventDto>>("api/events");
+    }
+}

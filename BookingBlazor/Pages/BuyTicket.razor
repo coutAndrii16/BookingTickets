@@ -1,0 +1,113 @@
+﻿@page "/events/{EventId:long}/buy"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<PageTitle>Придбати квиток</PageTitle>
+
+@if (ev == null)
+{
+    <div class="d-flex justify-content-center my-5">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else
+{
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-0 mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">🎫 @ev.Title</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-1">📍 @ev.Location &nbsp;|&nbsp; 📅 @ev.Date.ToString("dd.MM.yyyy HH:mm")</p>
+                    <p class="text-secondary">@ev.Description</p>
+                    <p class="fs-5 fw-bold text-success">Ціна за місце: @ev.Price.ToString("C")</p>
+                </div>
+            </div>
+
+            <div class="card shadow border-0">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Оформлення квитка</h5>
+                </div>
+                <div class="card-body p-4">
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success">@successMessage</div>
+                    }
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger">@errorMessage</div>
+                    }
+                    <EditForm Model="@ticket" OnValidSubmit="HandleSubmit">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Ваше ім'я</label>
+                            <InputText @bind-Value="ticket.BuyerName" class="form-control" placeholder="Іван Петренко" />
+                            <ValidationMessage For="@(() => ticket.BuyerName)" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email</label>
+                            <InputText @bind-Value="ticket.BuyerEmail" class="form-control" placeholder="ivan@example.com" />
+                            <ValidationMessage For="@(() => ticket.BuyerEmail)" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Кількість місць (1–20)</label>
+                            <InputNumber @bind-Value="ticket.SeatCount" class="form-control" min="1" max="20" />
+                            <ValidationMessage For="@(() => ticket.SeatCount)" class="text-danger small" />
+                            <div class="form-text">
+                                Загальна вартість: <strong class="text-success">@((ev.Price * ticket.SeatCount).ToString("C"))</strong>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success" disabled="@isLoading">
+                                @(isLoading ? "Обробка..." : "✔ Придбати")
+                            </button>
+                            <a href="/events" class="btn btn-secondary">← Назад</a>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public long EventId { get; set; }
+
+    private EventDto? ev;
+    private CreateTicketDto ticket = new();
+    private string successMessage = string.Empty;
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ev = await Http.GetFromJsonAsync<EventDto>($"api/events/{EventId}");
+        ticket.EventId = EventId;
+    }
+
+    private async Task HandleSubmit()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+
+        var response = await Http.PostAsJsonAsync("api/tickets", ticket);
+        isLoading = false;
+
+        if (response.IsSuccessStatusCode)
+        {
+            successMessage = $"✅ Квиток успішно придбано! Дякуємо, {ticket.BuyerName}!";
+            ticket = new CreateTicketDto { EventId = EventId };
+        }
+        else
+        {
+            errorMessage = $"Помилка при оформленні квитка: {response.StatusCode}";
+        }
+    }
+}

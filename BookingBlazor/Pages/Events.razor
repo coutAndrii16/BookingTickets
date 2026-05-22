@@ -1,0 +1,80 @@
+﻿@page "/events"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<PageTitle>Події — Booking Tickets</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>🗓 Усі події</h4>
+    <div class="d-flex gap-2 align-items-center">
+        <select class="form-select form-select-sm" style="width:auto" @onchange="FilterByLocation">
+            <option value="">🌐 Усі міста</option>
+            @foreach (var loc in locations)
+            {
+                <option value="@loc">📍 @loc</option>
+            }
+        </select>
+    </div>
+</div>
+
+@if (events == null)
+{
+    <div class="d-flex justify-content-center my-5">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else if (!events.Any())
+{
+    <div class="alert alert-info">Подій не знайдено.</div>
+}
+else
+{
+    @foreach (var ev in events)
+    {
+        <div class="card mb-3 shadow-sm border-0">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="card-title mb-1">@ev.Title</h5>
+                        <small class="text-muted">
+                            📍 @ev.Location &nbsp;|&nbsp; 📅 @ev.Date.ToString("dd.MM.yyyy HH:mm")
+                        </small>
+                        <p class="card-text mt-2 text-secondary">@ev.Description</p>
+                    </div>
+                    <div class="text-end ms-3">
+                        <span class="fs-5 fw-bold text-success">@ev.Price.ToString("C")</span>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <a href="/events/@ev.EventId/buy" class="btn btn-sm btn-primary">
+                        🎫 Придбати квиток
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private List<EventDto>? allEvents;
+    private List<EventDto>? events;
+    private List<string> locations = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        allEvents = await Http.GetFromJsonAsync<List<EventDto>>("api/events");
+        events = allEvents;
+        if (allEvents != null)
+            locations = allEvents.Select(e => e.Location).Distinct().OrderBy(x => x).ToList();
+    }
+
+    private void FilterByLocation(ChangeEventArgs e)
+    {
+        var location = e.Value?.ToString();
+        if (string.IsNullOrEmpty(location))
+            events = allEvents;
+        else
+            events = allEvents?.Where(ev => ev.Location == location).ToList();
+    }
+}
