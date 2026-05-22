@@ -1,5 +1,5 @@
-﻿using Blazored.LocalStorage;
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
+using Blazored.LocalStorage;
 
 namespace BookingBlazor.Services
 {

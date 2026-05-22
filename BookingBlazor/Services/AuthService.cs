@@ -1,10 +1,10 @@
-﻿using Blazored.LocalStorage;
-using BookingBlazor.Models;
-using Microsoft.AspNetCore.Components.Authorization;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Claims;
+using Blazored.LocalStorage;
+using BookingBlazor.Models;
+using Microsoft.AspNetCore.Components.Authorization;
 
 namespace BookingBlazor.Services
 {
